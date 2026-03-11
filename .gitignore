@@ -1,0 +1,5 @@
+.env
+venv/
+__pycache__/
+*.pyc
+bybit_funding_bot.db
