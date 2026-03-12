@@ -114,17 +114,18 @@ async def run_scan(
             continue
 
         perpetual_symbols.add(symbol)
+        # fundingInterval bilgisini artık filtre için kullanmıyoruz,
+        # sadece enformasyon amaçlı saklıyoruz (varsa).
         interval_min_raw = inst.get("fundingInterval")
         try:
             interval_min = int(interval_min_raw)
         except (TypeError, ValueError):
-            continue
-        funding_intervals[symbol] = interval_min
+            interval_min = None
+        if interval_min is not None:
+            funding_intervals[symbol] = interval_min
 
     tickers = await client.get_tickers()
     total_scanned = len([t for t in tickers if t.get("symbol") in perpetual_symbols])
-
-    allowed_intervals = set(criteria.allowed_funding_intervals_min)
     matches: List[Dict[str, Any]] = []
 
     # First pass: cheap filters using tickers + instruments metadata
@@ -139,9 +140,6 @@ async def run_scan(
             continue
 
         interval_min = funding_intervals.get(symbol)
-        if interval_min not in allowed_intervals:
-            continue
-
         candidates.append(
             {
                 "symbol": symbol,
