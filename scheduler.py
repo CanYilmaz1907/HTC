@@ -29,6 +29,9 @@ async def setup_scheduler(app_bot_data: dict) -> AsyncIOScheduler:
     config: AppConfig = app_bot_data["config"]
     client: BybitClient = app_bot_data["bybit_client"]
 
+    # Store app loop so scheduler jobs (running in another thread) can schedule coroutines on it
+    app_bot_data["event_loop"] = asyncio.get_running_loop()
+
     tz = _get_timezone(config)
 
     scheduler = AsyncIOScheduler(timezone=tz)
@@ -52,7 +55,8 @@ async def setup_scheduler(app_bot_data: dict) -> AsyncIOScheduler:
 
     def wrap(coro_func):
         def runner():
-            asyncio.create_task(coro_func())
+            loop = app_bot_data["event_loop"]
+            asyncio.run_coroutine_threadsafe(coro_func(), loop)
 
         return runner
 
